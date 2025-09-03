@@ -40,6 +40,7 @@ def run_simulation():
     # Parametry dla strategii 'Momentum'
     MOMENTUM_TICKERS = ['SXR8.DE', 'IS3N.DE', 'VVSM.DE', 'XAIX.DE']
     MOMENTUM_LOOKBACK_MONTHS = 6 # Wariant 1: 6 miesięcy
+    MOMENTUM_FREQUENCY = 'weekly' # 'daily', 'weekly', or 'monthly'
 
     # =========================================================================
     # --- 2. PRZYGOTOWANIE DO SYMULACJI ---
@@ -57,9 +58,13 @@ def run_simulation():
         tickers_to_fetch = list(set([M_I_TICKER] + list(BENCHMARKS.values())))
         print(f"Wybrano strategię: Comiesięczna inwestycja ${M_I_AMOUNT} w {M_I_TICKER}")
     elif STRATEGY_CHOICE == 'Momentum':
-        strategy = MomentumStrategy(tickers=MOMENTUM_TICKERS, lookback_months=MOMENTUM_LOOKBACK_MONTHS)
+        strategy = MomentumStrategy(
+            tickers=MOMENTUM_TICKERS,
+            lookback_months=MOMENTUM_LOOKBACK_MONTHS,
+            rebalance_frequency=MOMENTUM_FREQUENCY
+        )
         tickers_to_fetch = list(set(MOMENTUM_TICKERS + list(BENCHMARKS.values())))
-        print(f"Wybrano strategię: Momentum {MOMENTUM_LOOKBACK_MONTHS}-miesięczne dla {MOMENTUM_TICKERS}")
+        print(f"Wybrano strategię: Momentum {MOMENTUM_LOOKBACK_MONTHS}-miesięczne dla {MOMENTUM_TICKERS} z rebalansowaniem '{MOMENTUM_FREQUENCY}'")
     else:
         raise ValueError(f"Nieznana strategia: {STRATEGY_CHOICE}")
 

@@ -59,28 +59,40 @@ class MomentumStrategy(Strategy):
     """
     Strategia oparta na momentum.
 
-    Co miesiąc wybiera jeden, najlepiej radzący sobie ETF na podstawie zwrotu
-    z ostatniego okresu (lookback_months) i inwestuje w niego cały kapitał.
+    Rebalansuje portfel z zadaną częstotliwością, wybierając jeden,
+    najlepiej radzący sobie ETF na podstawie zwrotu z ostatniego okresu
+    (lookback_months) i inwestuje w niego cały kapitał.
     """
-    def __init__(self, tickers: list, lookback_months: int):
+    def __init__(self, tickers: list, lookback_months: int, rebalance_frequency: str = 'monthly'):
         if lookback_months <= 0:
             raise ValueError("Okres 'lookback' musi być dodatni.")
+        if rebalance_frequency not in ['daily', 'weekly', 'monthly']:
+            raise ValueError("Częstotliwość rebalansowania musi być 'daily', 'weekly' lub 'monthly'.")
+
         self.tickers = tickers
         self.lookback_months = lookback_months
-        self.last_rebalance_month = -1
+        self.rebalance_frequency = rebalance_frequency
 
     def generate_signals(self, date: pd.Timestamp, data: pd.DataFrame, portfolio: Portfolio) -> dict:
-        # Sprawdź, czy to pierwszy dzień handlowy nowego miesiąca
-        current_month = date.month
-        if current_month == self.last_rebalance_month:
-            return {} # Już rebalansowano w tym miesiącu
+        # --- Sprawdzenie, czy nadszedł czas na rebalansowanie ---
+        is_rebalance_day = False
+        if self.rebalance_frequency == 'daily':
+            is_rebalance_day = True
+        elif self.rebalance_frequency == 'weekly':
+            # Sprawdź, czy to pierwszy dzień handlowy w tym tygodniu
+            week_data = data[data.index.isocalendar().week == date.isocalendar().week]
+            if not week_data.empty and date == week_data.index[0]:
+                is_rebalance_day = True
+        elif self.rebalance_frequency == 'monthly':
+            # Sprawdź, czy to pierwszy dzień handlowy w tym miesiącu
+            month_data = data[data.index.month == date.month]
+            if not month_data.empty and date == month_data.index[0]:
+                is_rebalance_day = True
 
-        current_month_days = data.loc[data.index.month == current_month]
-        if current_month_days.empty or date != current_month_days.index[0]:
-            return {} # Nie jest to pierwszy dzień handlowy miesiąca
+        if not is_rebalance_day:
+            return {}
 
-        print(f"\n--- Rebalansowanie portfela w dniu: {date.date()} ---")
-        self.last_rebalance_month = current_month
+        print(f"\n--- Rebalansowanie portfela ({self.rebalance_frequency}) w dniu: {date.date()} ---")
 
         # Obliczanie momentum dla każdego tickera
         momentum = {}
