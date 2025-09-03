@@ -1,0 +1,27 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Local data cache
+data/
+
+# IDE/Editor specific
+.vscode/
+.idea/
+
+# Environment
+.env
+venv/
+env/
+*.env
+*.env.*
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
