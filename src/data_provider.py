@@ -15,39 +15,48 @@ CACHE_DIR = 'data'
 def get_data(tickers: List[str], start_date: str, end_date: str) -> pd.DataFrame:
     """
     Pobiera dane historyczne dla podanych tickerów w zadanym okresie.
-    Wykorzystuje mechanizm cache'owania, aby unikać wielokrotnego pobierania tych samych danych.
-
-    Args:
-        tickers (List[str]): Lista tickerów do pobrania.
-        start_date (str): Data początkowa w formacie 'YYYY-MM-DD'.
-        end_date (str): Data końcowa w formacie 'YYYY-MM-DD'.
-
-    Returns:
-        pd.DataFrame: Ramka danych zawierająca historyczne ceny (OHLC) i wolumen.
+    Ta wersja jest bardziej odporna na problemy z formatowaniem danych z yfinance.
     """
-    if not os.path.exists(CACHE_DIR):
-        os.makedirs(CACHE_DIR)
+    print("Pobieranie danych rynkowych...")
+    
+    # Pobieramy dane dla strategii i benchmarku
+    data = yf.download(tickers, start=start_date, end=end_date)
+    if data.empty:
+        raise ConnectionError(f"Nie udało się pobrać danych dla tickerów: {tickers}")
 
-    # Tworzenie unikalnej nazwy pliku dla cache'u
-    tickers_str = '_'.join(sorted(tickers))
-    filename = f"{tickers_str}_{start_date}_{end_date}.csv"
-    filepath = os.path.join(CACHE_DIR, filename)
-
-    if os.path.exists(filepath):
-        print(f"Wczytywanie danych z cache: {filepath}")
-        data = pd.read_csv(filepath, header=[0, 1], index_col=0, parse_dates=True)
-    else:
-        print("Pobieranie danych z yfinance...")
-        data = yf.download(tickers, start=start_date, end=end_date)
-        if not data.empty:
-            # Zapisywanie danych do pliku CSV
-            data.to_csv(filepath)
-            print(f"Zapisano dane w cache: {filepath}")
-        else:
-            print(f"Nie udało się pobrać danych dla tickerów: {tickers}")
-
-    # Konwersja nazw kolumn na stringi, jeśli to konieczne
+    # Konwersja nazw kolumn z MultiIndex na pojedyncze stringi
     if isinstance(data.columns, pd.MultiIndex):
         data.columns = data.columns.map(lambda x: f"{x[0]}_{x[1]}")
+
+    # --- KONWERSJA WALUT ---
+    eur_tickers = [t for t in tickers if t.endswith('.DE')]
+    if eur_tickers:
+        print("Wykryto tickery w EUR. Rozpoczynanie konwersji na USD...")
+        
+        eur_usd_data = yf.download('EURUSD=X', start=start_date, end=end_date, progress=False)
+        if eur_usd_data.empty:
+            raise ConnectionError("Nie udało się pobrać danych kursu walutowego EUR/USD.")
+        
+        # Wyodrębnienie serii 'Close' i upewnienie się, że jest to seria (Series)
+        eur_usd_series = eur_usd_data['Close']
+        if isinstance(eur_usd_series, pd.DataFrame):
+            # Jeśli nadal jest to DataFrame (np. z powodu formatowania yfinance), wybierz pierwszą kolumnę
+            eur_usd_series = eur_usd_series.iloc[:, 0]
+        
+        # Dopasowanie indeksu i wypełnienie brakujących danych
+        eur_usd_series = eur_usd_series.reindex(data.index).ffill().bfill()
+        
+        # Ostateczne sprawdzenie, czy nie ma NaN
+        if eur_usd_series.isnull().any():
+            raise ValueError("Seria kursów walutowych wciąż zawiera wartości NaN po przetworzeniu.")
+
+        # Konwersja cen
+        for ticker in eur_tickers:
+            for col_type in ['Open', 'High', 'Low', 'Close']:
+                col_name = f'{col_type}_{ticker}'
+                if col_name in data.columns:
+                    data[col_name] = data[col_name] * eur_usd_series
+        
+        print("Konwersja walut zakończona.")
 
     return data

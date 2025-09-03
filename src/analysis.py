@@ -9,31 +9,36 @@ import matplotlib.pyplot as plt
 
 from typing import Dict
 
-def plot_performance(equity_curve: pd.Series, benchmarks: Dict[str, pd.Series], output_filename: str = 'performance_chart.png'):
+def plot_performance(strategy_curves: Dict[str, pd.Series], benchmarks: Dict[str, pd.Series], output_filename: str = 'performance_chart.png'):
     """
-    Generuje i zapisuje wykres porównujący wyniki portfela z benchmarkami.
+    Generuje i zapisuje wykres porównujący wyniki wielu strategii z benchmarkami.
 
     Args:
-        equity_curve (pd.Series): Seria czasowa z wartością portfela.
+        strategy_curves (Dict[str, pd.Series]): Słownik z nazwami i seriami czasowymi strategii.
         benchmarks (Dict[str, pd.Series]): Słownik z nazwami i seriami czasowymi benchmarków.
         output_filename (str): Nazwa pliku do zapisu wykresu.
     """
     print(f"Generowanie wykresu wydajności... Zapisywanie do pliku {output_filename}")
 
-    # 1. Normalizacja danych, aby pokazać skumulowany zwrot
-    portfolio_returns = (equity_curve / equity_curve.iloc[0])
-
-    # 2. Tworzenie wykresu
+    # 1. Tworzenie wykresu
     plt.style.use('seaborn-v0_8-darkgrid')
-    fig, ax = plt.subplots(figsize=(14, 8))
+    fig, ax = plt.subplots(figsize=(16, 10))
+    
+    # Paleta kolorów dla strategii
+    colors = plt.cm.get_cmap('viridis', len(strategy_curves))
 
-    ax.plot(portfolio_returns.index, portfolio_returns, label='Strategia', color='royalblue', linewidth=2.5, zorder=10)
+    # 2. Rysowanie krzywych kapitału dla każdej strategii
+    for i, (name, curve) in enumerate(strategy_curves.items()):
+        # Normalizacja danych, aby pokazać skumulowany zwrot
+        normalized_curve = curve / curve.iloc[0]
+        ax.plot(normalized_curve.index, normalized_curve, label=name, color=colors(i), linewidth=2.0, zorder=10)
 
-    # Dodawanie benchmarków do wykresu
-    benchmark_colors = ['gray', 'darkorange', 'green', 'purple']
+    # 3. Dodawanie benchmarków do wykresu
+    benchmark_colors = ['gray', 'darkorange', 'red', 'purple']
     for i, (name, curve) in enumerate(benchmarks.items()):
+        # Normalizacja danych benchmarku
         benchmark_returns = (curve / curve.iloc[0])
-        ax.plot(benchmark_returns.index, benchmark_returns, label=name, color=benchmark_colors[i % len(benchmark_colors)], linestyle='--', linewidth=1.5)
+        ax.plot(benchmark_returns.index, benchmark_returns, label=name, color=benchmark_colors[i % len(benchmark_colors)], linestyle='--', linewidth=2.0)
 
 
     # 3. Ustawienia wykresu

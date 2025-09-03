@@ -2,86 +2,86 @@
 """
 Główny plik uruchomieniowy dla aplikacji do backtestingu.
 
-Ten skrypt konfiguruje i uruchamia symulację strategii inwestycyjnej.
+Ten skrypt konfiguruje i uruchamia symulację wielu strategii inwestycyjnych
+i porównuje ich wyniki na jednym wykresie.
 """
+import itertools
 from src.data_provider import get_data
 from src.portfolio import Portfolio
-from src.strategy import BuyAndHoldStrategy, MonthlyInvestmentStrategy, MomentumStrategy
+from src.strategy import MomentumStrategy
 from src.engine import BacktestingEngine
 from src.analysis import plot_performance
 
 def run_simulation():
     """
-    Konfiguruje i uruchamia pełną symulację backtestingu.
+    Konfiguruje i uruchamia pełną symulację backtestingu dla wielu strategii.
     """
     # =========================================================================
     # --- 1. KONFIGURACJA SYMULACJI ---
     # =========================================================================
 
-    # Wybierz strategię: 'BuyAndHold', 'MonthlyInvestment', 'Momentum'
-    STRATEGY_CHOICE = 'Momentum'
-
     # Parametry ogólne
     INITIAL_CASH = 10000.0
-    # Data początkowa musi uwzględniać okres 'lookback' dla strategii Momentum
+    # Data początkowa musi uwzględniać najdłuższy okres 'lookback' (12 miesięcy)
     START_DATE = '2020-01-01'
-    END_DATE = '2023-12-31'
+    END_DATE = '2025-01-01'
 
-    # Definicja benchmarków. Klucz to nazwa, wartość to ticker.
+    # Definicja benchmarku
     BENCHMARKS = {'S&P 500': 'SPY'}
 
-    # Parametry dla strategii 'BuyAndHold'
-    B_H_TICKERS = ['AAPL', 'MSFT']
-
-    # Parametry dla strategii 'MonthlyInvestment'
-    M_I_TICKER = 'SPY'
-    M_I_AMOUNT = 500.0
-
-    # Parametry dla strategii 'Momentum'
+    # Tickers dla strategii Momentum
     MOMENTUM_TICKERS = ['SXR8.DE', 'IS3N.DE', 'VVSM.DE', 'XAIX.DE']
-    MOMENTUM_LOOKBACK_MONTHS = 6 # Wariant 1: 6 miesięcy
-    MOMENTUM_FREQUENCY = 'weekly' # 'daily', 'weekly', or 'monthly'
+    # Warianty strategii do przetestowania
+    lookback_options = [12]
+    frequency_options = ['daily', 'weekly', 'monthly']
+    
+    # Generowanie wszystkich kombinacji strategii
+    strategy_configs = []
+    for lookback, frequency in itertools.product(lookback_options, frequency_options):
+        strategy_configs.append({
+            'lookback_months': lookback,
+            'rebalance_frequency': frequency,
+            'name': f"Momentum {lookback}M ({frequency.capitalize()})"
+        })
 
     # =========================================================================
-    # --- 2. PRZYGOTOWANIE DO SYMULACJI ---
+    # --- 2. PRZYGOTOWANIE DANYCH ---
     # =========================================================================
-    print("Inicjalizacja symulacji...")
+    print("Pobieranie i przygotowywanie danych rynkowych...")
+    # Pobierz dane dla wszystkich tickerów strategii i benchmarku
+    all_tickers = list(set(MOMENTUM_TICKERS + list(BENCHMARKS.values())))
+    market_data = get_data(all_tickers, START_DATE, END_DATE)
 
-    portfolio = Portfolio(initial_cash=INITIAL_CASH)
+    # =========================================================================
+    # --- 3. URUCHOMIENIE BACKTESTINGU DLA KAŻDEJ STRATEGII ---
+    # =========================================================================
+    strategy_curves = {}
 
-    if STRATEGY_CHOICE == 'BuyAndHold':
-        strategy = BuyAndHoldStrategy(tickers=B_H_TICKERS, initial_investment_per_ticker=INITIAL_CASH / len(B_H_TICKERS))
-        tickers_to_fetch = list(set(B_H_TICKERS + list(BENCHMARKS.values())))
-        print(f"Wybrano strategię: Kup i Trzymaj dla {B_H_TICKERS}")
-    elif STRATEGY_CHOICE == 'MonthlyInvestment':
-        strategy = MonthlyInvestmentStrategy(ticker=M_I_TICKER, monthly_investment=M_I_AMOUNT)
-        tickers_to_fetch = list(set([M_I_TICKER] + list(BENCHMARKS.values())))
-        print(f"Wybrano strategię: Comiesięczna inwestycja ${M_I_AMOUNT} w {M_I_TICKER}")
-    elif STRATEGY_CHOICE == 'Momentum':
+    for config in strategy_configs:
+        print(f"\n--- Uruchamianie symulacji dla: {config['name']} ---")
+        
+        # Inicjalizacja dla każdej symulacji
+        portfolio = Portfolio(initial_cash=INITIAL_CASH)
         strategy = MomentumStrategy(
             tickers=MOMENTUM_TICKERS,
-            lookback_months=MOMENTUM_LOOKBACK_MONTHS,
-            rebalance_frequency=MOMENTUM_FREQUENCY
+            lookback_months=config['lookback_months'],
+            rebalance_frequency=config['rebalance_frequency']
         )
-        tickers_to_fetch = list(set(MOMENTUM_TICKERS + list(BENCHMARKS.values())))
-        print(f"Wybrano strategię: Momentum {MOMENTUM_LOOKBACK_MONTHS}-miesięczne dla {MOMENTUM_TICKERS} z rebalansowaniem '{MOMENTUM_FREQUENCY}'")
-    else:
-        raise ValueError(f"Nieznana strategia: {STRATEGY_CHOICE}")
-
-    print("Pobieranie danych rynkowych...")
-    market_data = get_data(tickers_to_fetch, START_DATE, END_DATE)
-
-    # =========================================================================
-    # --- 3. URUCHOMIENIE SILNIKA BACKTESTINGU ---
-    # =========================================================================
-    engine = BacktestingEngine(portfolio, strategy, market_data)
-    equity_curve = engine.run_backtest()
+        
+        engine = BacktestingEngine(portfolio, strategy, market_data)
+        equity_curve = engine.run_backtest()
+        
+        if not equity_curve.empty:
+            strategy_curves[config['name']] = equity_curve
+            print(f"Końcowa wartość portfela dla '{config['name']}': ${equity_curve.iloc[-1]:.2f}")
+        else:
+            print(f"Ostrzeżenie: Pusta krzywa kapitału dla strategii {config['name']}.")
 
     # =========================================================================
     # --- 4. ANALIZA I WIZUALIZACJA WYNIKÓW ---
     # =========================================================================
-    print("Analiza wyników...")
-    if not equity_curve.empty:
+    print("\nAnaliza wyników...")
+    if strategy_curves:
         # Przygotowanie danych benchmarku
         benchmarks_curves = {}
         for name, ticker in BENCHMARKS.items():
@@ -89,20 +89,15 @@ def run_simulation():
             if benchmark_col in market_data.columns:
                 curve = market_data[benchmark_col].dropna()
                 if not curve.empty:
+                    # Normalizacja wartości benchmarku do początkowego kapitału
                     benchmarks_curves[name] = curve * (INITIAL_CASH / curve.iloc[0])
+                    print(f"Końcowa wartość benchmarku '{name}': ${benchmarks_curves[name].iloc[-1]:.2f}")
 
-        # Generowanie wykresu
-        if benchmarks_curves:
-            plot_performance(equity_curve, benchmarks_curves)
-
-        print("\n--- Podsumowanie ---")
-        print(f"Początkowa wartość portfela: ${INITIAL_CASH:.2f}")
-        print(f"Końcowa wartość portfela: ${equity_curve.iloc[-1]:.2f}")
-        for name, curve in benchmarks_curves.items():
-             print(f"Końcowa wartość benchmarku '{name}': ${curve.iloc[-1]:.2f}")
+        # Generowanie wykresu (zostanie dostosowane w kolejnym kroku)
+        plot_performance(strategy_curves, benchmarks_curves)
 
     else:
-        print("Błąd: Equity curve jest pusta. Nie można przeanalizować wyników.")
+        print("Błąd: Nie udało się wygenerować żadnej krzywej kapitału.")
 
     print("\nSymulacja zakończona pomyślnie.")
 

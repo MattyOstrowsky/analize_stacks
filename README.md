@@ -87,3 +87,4 @@ Następnie, skonfigurować i uruchomić główny skrypt:
 python main.py
 ```
 Wynik symulacji (wykres) zostanie zapisany w pliku `performance_chart.png`.
+ MOMENTUM_TICKERS = ['SXR8.DE', 'IS3N.DE', 'VVSM.DE', 'XAIX', 'CBU3N.MX', "QAU.AX"]
