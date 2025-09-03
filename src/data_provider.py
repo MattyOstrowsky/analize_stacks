@@ -60,3 +60,41 @@ def get_data(tickers: List[str], start_date: str, end_date: str) -> pd.DataFrame
         print("Konwersja walut zakończona.")
 
     return data
+
+
+def test_ticker(ticker_symbol: str):
+    """
+    Sprawdza i wyświetla podstawowe informacje o danym tickerze z Yahoo Finance.
+
+    Args:
+        ticker_symbol (str): Symbol tickera do sprawdzenia (np. 'SXR8.DE').
+    """
+    try:
+        print(f"--- Sprawdzanie tickera: {ticker_symbol} ---")
+        ticker = yf.Ticker(ticker_symbol)
+
+        # Pobranie .info może być wolne i czasem zawodzi, więc robimy to raz
+        info = ticker.info
+
+        if not info or 'symbol' not in info:
+            print(f"Błąd: Nie znaleziono informacji dla tickera '{ticker_symbol}'. "
+                  "Sprawdź, czy symbol jest poprawny.")
+            return
+
+        # Wyświetlanie podstawowych informacji
+        name = info.get('longName', 'Brak nazwy')
+        currency = info.get('currency', 'Brak informacji o walucie')
+
+        # Data rozpoczęcia notowań - yfinance może podawać to w różny sposób
+        start_date_timestamp = info.get('firstTradeDateEpochUtc')
+        if start_date_timestamp:
+            start_date = pd.to_datetime(start_date_timestamp, unit='s').strftime('%Y-%m-%d')
+        else:
+            start_date = 'Brak informacji o dacie rozpoczęcia'
+
+        print(f"  Nazwa: {name}")
+        print(f"  Waluta: {currency}")
+        print(f"  Data pierwszych notowań: {start_date}")
+
+    except Exception as e:
+        print(f"Wystąpił nieoczekiwany błąd podczas sprawdzania tickera {ticker_symbol}: {e}")
