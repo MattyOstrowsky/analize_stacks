@@ -54,6 +54,90 @@ class BuyAndHoldStrategy(Strategy):
             self.invested = True
         return signals
 
+
+class MomentumStrategy(Strategy):
+    """
+    Strategia oparta na momentum.
+
+    Co miesiąc wybiera jeden, najlepiej radzący sobie ETF na podstawie zwrotu
+    z ostatniego okresu (lookback_months) i inwestuje w niego cały kapitał.
+    """
+    def __init__(self, tickers: list, lookback_months: int):
+        if lookback_months <= 0:
+            raise ValueError("Okres 'lookback' musi być dodatni.")
+        self.tickers = tickers
+        self.lookback_months = lookback_months
+        self.last_rebalance_month = -1
+
+    def generate_signals(self, date: pd.Timestamp, data: pd.DataFrame, portfolio: Portfolio) -> dict:
+        # Sprawdź, czy to pierwszy dzień handlowy nowego miesiąca
+        current_month = date.month
+        if current_month == self.last_rebalance_month:
+            return {} # Już rebalansowano w tym miesiącu
+
+        current_month_days = data.loc[data.index.month == current_month]
+        if current_month_days.empty or date != current_month_days.index[0]:
+            return {} # Nie jest to pierwszy dzień handlowy miesiąca
+
+        print(f"\n--- Rebalansowanie portfela w dniu: {date.date()} ---")
+        self.last_rebalance_month = current_month
+
+        # Obliczanie momentum dla każdego tickera
+        momentum = {}
+        lookback_start_date = date - pd.DateOffset(months=self.lookback_months)
+
+        # Upewniamy się, że mamy dane do obliczeń
+        lookback_data = data.loc[(data.index >= lookback_start_date) & (data.index < date)]
+        if lookback_data.empty:
+            print("Ostrzeżenie: Brak danych historycznych do obliczenia momentum.")
+            return {}
+
+        for ticker in self.tickers:
+            price_col = f'Close_{ticker}'
+            if price_col not in lookback_data.columns:
+                continue
+
+            prices = lookback_data[price_col].dropna()
+            if len(prices) > 1:
+                # Prosty zwrot: (ostatnia cena - pierwsza cena) / pierwsza cena
+                momentum[ticker] = (prices.iloc[-1] - prices.iloc[0]) / prices.iloc[0]
+
+        if not momentum:
+            print("Ostrzeżenie: Nie udało się obliczyć momentum dla żadnego tickera.")
+            return {}
+
+        # Wybór najlepszego tickera
+        winner_ticker = max(momentum, key=momentum.get)
+        print(f"Zwycięzca momentum ({self.lookback_months}M): {winner_ticker} (zwrot: {momentum[winner_ticker]:.2%})")
+
+        # Generowanie sygnałów do rebalansowania
+        signals = {}
+
+        # 1. Sygnały sprzedaży dla obecnych aktywów
+        for holding_ticker, quantity in portfolio.holdings.items():
+            if holding_ticker != winner_ticker:
+                signals[holding_ticker] = -quantity # Sprzedaj wszystko
+
+        # 2. Sygnał kupna dla zwycięzcy
+        current_prices = data.loc[date]
+        total_portfolio_value = portfolio.get_total_value(current_prices)
+        winner_price = current_prices.get(f'Close_{winner_ticker}')
+
+        if winner_price and pd.notna(winner_price) and winner_price > 0:
+            # Użyj całkowitej wartości portfela do obliczenia nowej pozycji
+            total_portfolio_value = portfolio.get_total_value(current_prices)
+
+            # Ile akcji zwycięzcy powinniśmy posiadać
+            target_quantity = int(total_portfolio_value / winner_price)
+
+            # Ile już posiadamy?
+            already_own = portfolio.holdings.get(winner_ticker, 0)
+
+            # Sygnał to różnica między pożądaną a obecną pozycją
+            signals[winner_ticker] = target_quantity - already_own
+
+        return {k: v for k, v in signals.items() if v != 0} # Zwróć tylko niezerowe sygnały
+
 class MonthlyInvestmentStrategy(Strategy):
     """
     Strategia comiesięcznego inwestowania stałej kwoty w jeden walor.

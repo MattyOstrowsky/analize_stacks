@@ -33,9 +33,9 @@ Aplikacja zostanie zbudowana w sposób modułowy, aby zapewnić elastyczność i
 Poniżej znajduje się lista zadań, które należy wykonać, aby zbudować aplikację.
 
 ### Task 1: Inicjalizacja Projektu i Struktura Katalogów
-- [ ] Stworzenie głównego folderu projektu.
-- [ ] Utworzenie pliku `requirements.txt` z listą zależności (`pandas`, `yfinance`, `matplotlib`).
-- [ ] Stworzenie pustych plików Python dla każdego modułu:
+- [x] Stworzenie głównego folderu projektu.
+- [x] Utworzenie pliku `requirements.txt` z listą zależności (`pandas`, `yfinance`, `matplotlib`).
+- [x] Stworzenie pustych plików Python dla każdego modułu:
   - `src/data_provider.py`
   - `src/portfolio.py`
   - `src/strategy.py`
@@ -44,36 +44,36 @@ Poniżej znajduje się lista zadań, które należy wykonać, aby zbudować apli
   - `main.py`
 
 ### Task 2: Implementacja Dostawcy Danych (`data_provider.py`)
-- [ ] Stworzenie funkcji, która pobiera i zwraca historyczne dane dla listy tickerów w zadanym okresie.
-- [ ] Dodanie mechanizmu cachowania danych (np. do plików CSV), aby unikać wielokrotnego pobierania tych samych danych.
+- [x] Stworzenie funkcji, która pobiera i zwraca historyczne dane dla listy tickerów w zadanym okresie.
+- [x] Dodanie mechanizmu cachowania danych (np. do plików CSV), aby unikać wielokrotnego pobierania tych samych danych.
 
 ### Task 3: Implementacja Klasy Portfela (`portfolio.py`)
-- [ ] Stworzenie klasy `Portfolio`.
-- [ ] Implementacja metod do zarządzania gotówką i aktywami.
-- [ ] Implementacja metod do wykonywania transakcji (`buy`, `sell`) i zapisywania ich historii.
-- [ ] Dodanie metody do obliczania całkowitej wartości portfela na dany dzień.
+- [x] Stworzenie klasy `Portfolio`.
+- [x] Implementacja metod do zarządzania gotówką i aktywami.
+- [x] Implementacja metod do wykonywania transakcji (`buy`, `sell`) i zapisywania ich historii.
+- [x] Dodanie metody do obliczania całkowitej wartości portfela na dany dzień.
 
 ### Task 4: Implementacja Modułu Strategii (`strategy.py`)
-- [ ] Stworzenie abstrakcyjnej klasy bazowej `Strategy` z metodą `generate_signals`.
-- [ ] Implementacja prostej, przykładowej strategii, np. `BuyAndHoldStrategy` (kup pierwszego dnia i trzymaj do końca).
-- [ ] Implementacja strategii, która może działać w różnych interwałach (np. miesięcznej).
+- [x] Stworzenie abstrakcyjnej klasy bazowej `Strategy` z metodą `generate_signals`.
+- [x] Implementacja prostej, przykładowej strategii, np. `BuyAndHoldStrategy` (kup pierwszego dnia i trzymaj do końca).
+- [x] Implementacja strategii, która może działać w różnych interwałach (np. miesięcznej).
 
 ### Task 5: Implementacja Silnika Backtestingu (`engine.py`)
-- [ ] Stworzenie klasy `BacktestingEngine`.
-- [ ] Implementacja głównej pętli symulacji, która iteruje po dniach.
-- [ ] Integracja silnika z modułami danych, portfela i strategii.
-- [ ] Zapisywanie historii wartości portfela każdego dnia.
+- [x] Stworzenie klasy `BacktestingEngine`.
+- [x] Implementacja głównej pętli symulacji, która iteruje po dniach.
+- [x] Integracja silnika z modułami danych, portfela i strategii.
+- [x] Zapisywanie historii wartości portfela każdego dnia.
 
 ### Task 6: Implementacja Analizy i Wizualizacji (`analysis.py`)
-- [ ] Stworzenie funkcji, która przyjmuje historię wartości portfela oraz dane benchmarku.
+- [x] Stworzenie funkcji, która przyjmuje historię wartości portfela oraz dane benchmarku.
 - [ ] Obliczenie kluczowych metryk (np. zwrot całkowity, zmienność).
-- [ ] Wygenerowanie i zapisanie wykresu porównującego portfel z benchmarkiem przy użyciu `matplotlib`.
+- [x] Wygenerowanie i zapisanie wykresu porównującego portfel z benchmarkiem przy użyciu `matplotlib`.
 
 ### Task 7: Połączenie Wszystkiego w `main.py`
-- [ ] Skonfigurowanie parametrów symulacji (daty, kapitał, tickery, benchmark, strategia).
-- [ ] Inicjalizacja obiektów (Portfolio, Strategy, Engine).
-- [ ] Uruchomienie silnika backtestingu.
-- [ ] Wywołanie funkcji generującej raport końcowy.
+- [x] Skonfigurowanie parametrów symulacji (daty, kapitał, tickery, benchmark, strategia).
+- [x] Inicjalizacja obiektów (Portfolio, Strategy, Engine).
+- [x] Uruchomienie silnika backtestingu.
+- [x] Wywołanie funkcji generującej raport końcowy.
 
 ## 4. Użycie
 

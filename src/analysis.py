@@ -7,31 +7,37 @@ Generuje raporty i wykresy na podstawie wyników symulacji.
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def plot_performance(equity_curve: pd.Series, benchmark_curve: pd.Series, output_filename: str = 'performance_chart.png'):
+from typing import Dict
+
+def plot_performance(equity_curve: pd.Series, benchmarks: Dict[str, pd.Series], output_filename: str = 'performance_chart.png'):
     """
-    Generuje i zapisuje wykres porównujący wyniki portfela z benchmarkiem.
+    Generuje i zapisuje wykres porównujący wyniki portfela z benchmarkami.
 
     Args:
         equity_curve (pd.Series): Seria czasowa z wartością portfela.
-        benchmark_curve (pd.Series): Seria czasowa z wartością benchmarku.
+        benchmarks (Dict[str, pd.Series]): Słownik z nazwami i seriami czasowymi benchmarków.
         output_filename (str): Nazwa pliku do zapisu wykresu.
     """
     print(f"Generowanie wykresu wydajności... Zapisywanie do pliku {output_filename}")
 
     # 1. Normalizacja danych, aby pokazać skumulowany zwrot
-    # Dzielimy każdą wartość przez pierwszą wartość, aby obie serie zaczynały się od 1 (lub 100%)
     portfolio_returns = (equity_curve / equity_curve.iloc[0])
-    benchmark_returns = (benchmark_curve / benchmark_curve.iloc[0])
 
     # 2. Tworzenie wykresu
     plt.style.use('seaborn-v0_8-darkgrid')
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(14, 8))
 
-    ax.plot(portfolio_returns.index, portfolio_returns, label='Strategia', color='royalblue', linewidth=2)
-    ax.plot(benchmark_returns.index, benchmark_returns, label='Benchmark', color='gray', linestyle='--', linewidth=2)
+    ax.plot(portfolio_returns.index, portfolio_returns, label='Strategia', color='royalblue', linewidth=2.5, zorder=10)
+
+    # Dodawanie benchmarków do wykresu
+    benchmark_colors = ['gray', 'darkorange', 'green', 'purple']
+    for i, (name, curve) in enumerate(benchmarks.items()):
+        benchmark_returns = (curve / curve.iloc[0])
+        ax.plot(benchmark_returns.index, benchmark_returns, label=name, color=benchmark_colors[i % len(benchmark_colors)], linestyle='--', linewidth=1.5)
+
 
     # 3. Ustawienia wykresu
-    ax.set_title('Porównanie Wydajności Strategii z Benchmarkiem', fontsize=16)
+    ax.set_title('Porównanie Wydajności Strategii z Benchmarkami', fontsize=16)
     ax.set_xlabel('Data', fontsize=12)
     ax.set_ylabel('Skumulowany Zwrot', fontsize=12)
     ax.legend(loc='upper left', fontsize=10)
