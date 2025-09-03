@@ -6,7 +6,7 @@ Ten skrypt konfiguruje i uruchamia symulację wielu strategii inwestycyjnych
 i porównuje ich wyniki na jednym wykresie.
 """
 import itertools
-from src.data_provider import get_data
+from src.data_provider import get_data, test_ticker
 from src.portfolio import Portfolio
 from src.strategy import MomentumStrategy
 from src.engine import BacktestingEngine
@@ -103,4 +103,11 @@ def run_simulation():
 
 
 if __name__ == "__main__":
+    # --- Opcjonalny test dla pojedynczego tickera ---
+    # Możesz tutaj wpisać dowolny ticker, aby sprawdzić jego dane przed uruchomieniem symulacji
+    test_ticker('SPY')
+    test_ticker('SXR8.DE')
+    test_ticker('NIEPOPRAWNYTICKER') # Test dla niepoprawnego tickera
+    print("\n" + "="*80 + "\n")
+
     run_simulation()
