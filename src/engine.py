@@ -42,6 +42,7 @@ class BacktestingEngine:
         print("Uruchamianie symulacji backtestingu...")
 
         equity = {}
+        cash_over_time = {}
 
         for date, row in self.data.iterrows():
             # 1. Generowanie sygnałów przez strategię
@@ -57,12 +58,14 @@ class BacktestingEngine:
                     else:
                         print(f"Ostrzeżenie: Brak ceny dla {ticker} w dniu {date.date()}. Transakcja pominięta.")
 
-            # 3. Obliczenie i zapisanie wartości portfela na koniec dnia
+            # 3. Obliczenie i zapisanie wartości portfela i gotówki na koniec dnia
             total_value = self.portfolio.get_total_value(row)
             equity[date] = total_value
+            cash_over_time[date] = self.portfolio.cash
 
         self.equity_curve = pd.Series(equity)
+        cash_curve = pd.Series(cash_over_time)
         transactions_df = self.portfolio.get_transactions_df()
 
         print("Symulacja zakończona.")
-        return self.equity_curve, transactions_df
+        return self.equity_curve, transactions_df, cash_curve

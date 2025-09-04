@@ -69,12 +69,13 @@ def run_simulation():
         )
         
         engine = BacktestingEngine(portfolio, strategy, market_data)
-        equity_curve, transactions_df = engine.run_backtest()
+        equity_curve, transactions_df, cash_curve = engine.run_backtest()
         
         if not equity_curve.empty:
             strategy_results[config['name']] = {
                 'equity_curve': equity_curve,
-                'transactions': transactions_df
+                'transactions': transactions_df,
+                'cash_curve': cash_curve
             }
             print(f"Końcowa wartość portfela dla '{config['name']}': ${equity_curve.iloc[-1]:.2f}")
         else:
