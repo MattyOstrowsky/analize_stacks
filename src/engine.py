@@ -27,7 +27,7 @@ class BacktestingEngine:
         self.data = data
         self.equity_curve = None
 
-    def run_backtest(self) -> pd.Series:
+    def run_backtest(self) -> (pd.Series, pd.DataFrame):
         """
         Uruchamia symulację backtestingu.
 
@@ -35,7 +35,9 @@ class BacktestingEngine:
         i zapisuje dzienną wartość portfela.
 
         Returns:
-            pd.Series: Seria czasowa wartości portfela (equity curve).
+            Tuple[pd.Series, pd.DataFrame]: Krotka zawierająca:
+                - Serię czasową wartości portfela (equity curve).
+                - Ramkę danych z historią transakcji.
         """
         print("Uruchamianie symulacji backtestingu...")
 
@@ -60,5 +62,7 @@ class BacktestingEngine:
             equity[date] = total_value
 
         self.equity_curve = pd.Series(equity)
+        transactions_df = self.portfolio.get_transactions_df()
+
         print("Symulacja zakończona.")
-        return self.equity_curve
+        return self.equity_curve, transactions_df

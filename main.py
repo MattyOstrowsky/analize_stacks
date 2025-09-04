@@ -55,7 +55,7 @@ def run_simulation():
     # =========================================================================
     # --- 3. URUCHOMIENIE BACKTESTINGU DLA KAŻDEJ STRATEGII ---
     # =========================================================================
-    strategy_curves = {}
+    strategy_results = {}
 
     for config in strategy_configs:
         print(f"\n--- Uruchamianie symulacji dla: {config['name']} ---")
@@ -69,10 +69,13 @@ def run_simulation():
         )
         
         engine = BacktestingEngine(portfolio, strategy, market_data)
-        equity_curve = engine.run_backtest()
+        equity_curve, transactions_df = engine.run_backtest()
         
         if not equity_curve.empty:
-            strategy_curves[config['name']] = equity_curve
+            strategy_results[config['name']] = {
+                'equity_curve': equity_curve,
+                'transactions': transactions_df
+            }
             print(f"Końcowa wartość portfela dla '{config['name']}': ${equity_curve.iloc[-1]:.2f}")
         else:
             print(f"Ostrzeżenie: Pusta krzywa kapitału dla strategii {config['name']}.")
@@ -81,7 +84,7 @@ def run_simulation():
     # --- 4. ANALIZA I WIZUALIZACJA WYNIKÓW ---
     # =========================================================================
     print("\nAnaliza wyników...")
-    if strategy_curves:
+    if strategy_results:
         # Przygotowanie danych benchmarku
         benchmarks_curves = {}
         for name, ticker in BENCHMARKS.items():
@@ -94,7 +97,7 @@ def run_simulation():
                     print(f"Końcowa wartość benchmarku '{name}': ${benchmarks_curves[name].iloc[-1]:.2f}")
 
         # Generowanie wykresu (zostanie dostosowane w kolejnym kroku)
-        plot_performance(strategy_curves, benchmarks_curves)
+        plot_performance(strategy_results, benchmarks_curves)
 
     else:
         print("Błąd: Nie udało się wygenerować żadnej krzywej kapitału.")
